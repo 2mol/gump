@@ -20,12 +20,12 @@ library
   build-depends:
       base ^>=4.12.0.0
     , text
-    , vector
-    , massiv
-    -- , cassava
-    -- , hmatrix
-    -- , hmatrix-csv
-    , sv
+    , bytestring
+    -- , vector
+    -- , massiv
+    , cassava
+    , hmatrix
+    -- , sv
   hs-source-dirs:      src
   default-language:    Haskell2010
 

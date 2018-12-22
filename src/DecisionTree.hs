@@ -1,3 +1,8 @@
 module DecisionTree where
 
-bla = undefined
+import qualified Data.ByteString.Lazy as BS
+
+main = do
+    bs <- BS.readFile "data/iris.data"
+
+    pure ()
