@@ -21,8 +21,9 @@ library
       base ^>=4.12.0.0
     , text
     , bytestring
+    , containers
     , vector
-    -- , massiv
+    , massiv
     , cassava
     , hmatrix
     -- , Chart

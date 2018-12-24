@@ -20,7 +20,7 @@
 - we keep several maps around:
     - column labels, and their original indices
     - row labels (or just index numbers)
-    - data buckets, so something like `Map Int [a]` where a is our original data type (generally `Double`)
+    - data buckets, so something like `Map Int [a]` where a is our original data type (generally `Double`). Or better: `Map a Int`
 - last column is the classes! So we want a classification that we keep track of. Will be `String`, naively.
 
 
