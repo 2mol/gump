@@ -23,11 +23,23 @@
     - data buckets, so something like `Map Int [a]` where a is our original data type (generally `Double`). Or better: `Map a Int`
 - last column is the classes! So we want a classification that we keep track of. Will be `String`, naively.
 
+## How
+
+Problems:
+
+- how the FUCK do we just read in a csv and have something like a dataframe in haskell?
+    - cassava: couldn't figure out how to make number of columns dynamic
+    - frames?
+    - labels?
+    - hmatrix?
+    - massiv?
 
 ## Resources
 
-https://archive.ics.uci.edu/ml/index.php
-
+- data: https://archive.ics.uci.edu/ml/index.php
+- `Frames` tutorial:
+    - https://idontgetoutmuch.wordpress.com/2018/05/19/cartography-in-haskell/
+    - https://github.com/idontgetoutmuch/psephology
 
 ## Language choice
 

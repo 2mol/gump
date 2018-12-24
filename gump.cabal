@@ -26,6 +26,7 @@ library
     , massiv
     , cassava
     , hmatrix
+    , Frames
     -- , Chart
     -- , sv
   hs-source-dirs:      src
