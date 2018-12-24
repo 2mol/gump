@@ -2,8 +2,13 @@
 
 module DecisionTree where
 
-import Prelude as P
-import Data.Massiv.Array as A
+import Data.Foldable
+import Data.Function ((&))
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import Data.Massiv.Array (Array, Ix1, Ix2, U)
+import qualified Data.Massiv.Array as A
+
 
 irisData :: Array U Ix2 Double
 irisData = A.fromLists' A.Par
@@ -314,6 +319,41 @@ irisDataSpecies =
     , Virginica
     , Virginica
     ]
+{-
+how to build a decision tree:
+
+0. put data matrix values in buckets, if necessary. Keep dict of that mapping.
+1. get information gains for each column.
+2. see which column has the highest gain.
+3. perform `groupBy` on matrix (and feature vector) by that colum.
+4. recursively repeat with those smaller matrices in each group.
+
+-}
+
+-- 1. a) entropy measure
+
+countAll :: (Foldable t, Ord a) => t a -> Map a Int
+countAll xs =
+    foldl' insertCount M.empty xs
+    where
+        insertCount :: Ord a => Map a Int -> a -> Map a Int
+        insertCount counter el = M.insertWith (+) el 1 counter
+
+entropy :: (Foldable t, Ord a) => t a -> Double
+entropy xs =
+    let
+        counts = M.elems (countAll xs)
+
+        len = fromIntegral $ length xs
+
+        proportions =
+            [ c / len | c' <- counts, let c = fromIntegral c' ]
+
+        componentEntropies =
+            [ -p * logBase 2 p | p <- proportions ]
+    in
+        sum componentEntropies
+
 
 main :: IO ()
 main = do
