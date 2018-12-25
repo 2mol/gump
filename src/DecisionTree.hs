@@ -1,12 +1,15 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module DecisionTree where
 
-import Data.Foldable
+import qualified Data.Foldable as F
 import Data.Function ((&))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Massiv.Array (Array, Ix1, Ix2, U)
+import Prelude as P
+
+import Data.Massiv.Array (Array, Ix1, Ix2(..), M, U, D, Unbox, (<!))
 import qualified Data.Massiv.Array as A
 
 
@@ -334,7 +337,7 @@ how to build a decision tree:
 
 countAll :: (Foldable t, Ord a) => t a -> Map a Int
 countAll xs =
-    foldl' insertCount M.empty xs
+    F.foldl' insertCount M.empty xs
     where
         insertCount :: Ord a => Map a Int -> a -> Map a Int
         insertCount counter el = M.insertWith (+) el 1 counter
@@ -352,8 +355,37 @@ entropy xs =
         componentEntropies =
             [ -p * logBase 2 p | p <- proportions ]
     in
-        sum componentEntropies
+    F.sum componentEntropies
 
+-- generic groupBy
+
+-- let (m :. n) = A.size irisData
+
+groupByColumn :: (Unbox e) => Array U Ix2 e -> Int -> Map e (Array U Ix2 e)
+groupByColumn matrix idx =
+    let
+        groupingVector = matrix <! idx
+
+        groupIndices = undefined
+
+    in
+    undefined --M.foldl' (insertRow matrix) M.empty groupingVector
+
+insertRow :: Map e (Array U Ix2 e) -> Array U Ix2 e -> Map e (Array U Ix2 e)
+insertRow dict row = undefined
+
+-- groupIndices :: Array r ix e -> Map e [Int]
+-- groupIndices = undefined
+
+dropColumn :: (Unbox e) => Array U Ix2 e -> Int -> Array D Ix2 e
+dropColumn matrix idx =
+    let (m :. n) = A.size matrix
+        left  = A.extractFromTo' (0 :. 0) (m :. idx) matrix
+        right = A.extractFromTo' (0 :. (idx+1)) (m :. n) matrix
+    in
+    A.append' 1 left right
+
+--
 
 main :: IO ()
 main = do
