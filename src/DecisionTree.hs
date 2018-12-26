@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module DecisionTree where
 
@@ -9,7 +10,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Prelude as P
 
-import Data.Massiv.Array (Array, Ix1, Ix2(..), M, U, D, Unbox, (<!))
+import Data.Massiv.Array (Array, D, Ix1, Ix2(..), U(..), Unbox, (!>), (<!))
 import qualified Data.Massiv.Array as A
 
 
@@ -335,8 +336,8 @@ how to build a decision tree:
 
 -- 1. a) entropy measure
 
-countAll :: (Foldable t, Ord a) => t a -> Map a Int
-countAll xs =
+countElements :: (Foldable t, Ord a) => t a -> Map a Int
+countElements xs =
     F.foldl' insertCount M.empty xs
     where
         insertCount :: Ord a => Map a Int -> a -> Map a Int
@@ -345,7 +346,7 @@ countAll xs =
 entropy :: (Foldable t, Ord a) => t a -> Double
 entropy xs =
     let
-        counts = M.elems (countAll xs)
+        counts = M.elems (countElements xs)
 
         len = fromIntegral $ length xs
 
@@ -359,29 +360,31 @@ entropy xs =
 
 -- generic groupBy
 
--- let (m :. n) = A.size irisData
-
-groupByColumn :: (Unbox e) => Array U Ix2 e -> Int -> Map e (Array U Ix2 e)
+groupByColumn :: forall e . (Unbox e, Ord e) => Array D Ix2 e -> Int -> Map e (Array D Ix2 e)
 groupByColumn matrix idx =
     let
-        groupingVector = matrix <! idx
+        (m :. n) = A.size matrix
 
-        groupIndices = undefined
+        groupingVector = A.computeAs U (matrix <! idx)
 
+        matrix' = dropColumn idx matrix
+
+        insertRow :: Map e (Array D Ix2 e) -> Int -> Map e (Array D Ix2 e)
+        insertRow dict rowIdx =
+            M.insertWith
+                (A.append' 2)
+                (groupingVector <! rowIdx)
+                (A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
+                dict
     in
-    undefined --M.foldl' (insertRow matrix) M.empty groupingVector
+    F.foldl' insertRow M.empty [0..m-1]
+        -- & M.map A.compute
 
-insertRow :: Map e (Array U Ix2 e) -> Array U Ix2 e -> Map e (Array U Ix2 e)
-insertRow dict row = undefined
-
--- groupIndices :: Array r ix e -> Map e [Int]
--- groupIndices = undefined
-
-dropColumn :: (Unbox e) => Array U Ix2 e -> Int -> Array D Ix2 e
-dropColumn matrix idx =
+dropColumn :: (Unbox e) => Int -> Array D Ix2 e -> Array D Ix2 e
+dropColumn idx matrix =
     let (m :. n) = A.size matrix
         left  = A.extractFromTo' (0 :. 0) (m :. idx) matrix
-        right = A.extractFromTo' (0 :. (idx+1)) (m :. n) matrix
+        right = A.extractFromTo' (0 :. idx+1) (m :. n) matrix
     in
     A.append' 1 left right
 
