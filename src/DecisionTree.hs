@@ -1,16 +1,13 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module DecisionTree where
 
 import qualified Data.Foldable as F
-import Data.Function ((&))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Prelude as P
 
-import Data.Massiv.Array (Array, D, Ix1, Ix2(..), U(..), Unbox, (!>), (<!))
+import Data.Massiv.Array (Array, D, Ix1, Ix2(..), U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
 
 
@@ -323,14 +320,17 @@ irisDataSpecies =
     , Virginica
     , Virginica
     ]
+
 {-
 how to build a decision tree:
 
-0. put data matrix values in buckets, if necessary. Keep dict of that mapping.
+0. put data matrix values in buckets.
+   -> ideally Int, otherwise Double. (Keep dict of that mapping.)
 1. get information gains for each column.
 2. see which column has the highest gain.
-3. perform `groupBy` on matrix (and feature vector) by that colum.
+3. perform `groupBy` on matrix (and feature vector) by that column.
 4. recursively repeat with those smaller matrices in each group.
+5. the keys are the tree nodes.
 
 -}
 
@@ -348,10 +348,10 @@ entropy xs =
     let
         counts = M.elems (countElements xs)
 
-        len = fromIntegral $ length xs
+        n = fromIntegral $ length xs
 
         proportions =
-            [ c / len | c' <- counts, let c = fromIntegral c' ]
+            [ c / n | c' <- counts, let c = fromIntegral c' ]
 
         componentEntropies =
             [ -p * logBase 2 p | p <- proportions ]
@@ -360,12 +360,14 @@ entropy xs =
 
 -- generic groupBy
 
-groupByColumn :: forall e . (Unbox e, Ord e) => Array D Ix2 e -> Int -> Map e (Array D Ix2 e)
+groupByColumn :: forall e . (Unbox e, Ord e)
+    => Array D Ix2 e -> Int -> Map e (Array D Ix2 e)
 groupByColumn matrix idx =
     let
         (m :. n) = A.size matrix
 
-        groupingVector = A.computeAs U (matrix <! idx)
+        groupingVector :: Array U Ix1 e
+        groupingVector = A.compute (matrix <! idx)
 
         matrix' = dropColumn idx matrix
 
@@ -378,13 +380,12 @@ groupByColumn matrix idx =
                 dict
     in
     F.foldl' insertRow M.empty [0..m-1]
-        -- & M.map A.compute
 
-dropColumn :: (Unbox e) => Int -> Array D Ix2 e -> Array D Ix2 e
-dropColumn idx matrix =
+dropColumn :: Int -> Array D Ix2 e -> Array D Ix2 e
+dropColumn i matrix =
     let (m :. n) = A.size matrix
-        left  = A.extractFromTo' (0 :. 0) (m :. idx) matrix
-        right = A.extractFromTo' (0 :. idx+1) (m :. n) matrix
+        left  = A.extractFromTo' (0 :. 0)   (m :. i) matrix
+        right = A.extractFromTo' (0 :. i+1) (m :. n) matrix
     in
     A.append' 1 left right
 
@@ -392,5 +393,6 @@ dropColumn idx matrix =
 
 main :: IO ()
 main = do
+    putStrLn "fafa"
     pure ()
 
