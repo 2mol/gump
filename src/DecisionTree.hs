@@ -336,27 +336,23 @@ how to build a decision tree:
 
 -- 1. a) entropy measure
 
-countElements :: (Foldable t, Ord a) => t a -> Map a Int
+countElements :: forall a t . (Foldable t, Ord a) => t a -> Map a Int
 countElements xs =
     F.foldl' insertCount M.empty xs
     where
-        insertCount :: Ord a => Map a Int -> a -> Map a Int
+        insertCount :: Map a Int -> a -> Map a Int
         insertCount counter el = M.insertWith (+) el 1 counter
 
 entropy :: (Foldable t, Ord a) => t a -> Double
 entropy xs =
-    let
+    F.sum [ -p * logBase 2 p | p <- proportions ]
+    where
         counts = M.elems (countElements xs)
 
         n = fromIntegral $ length xs
 
         proportions =
             [ c / n | c' <- counts, let c = fromIntegral c' ]
-
-        componentEntropies =
-            [ -p * logBase 2 p | p <- proportions ]
-    in
-    F.sum componentEntropies
 
 -- generic groupBy
 

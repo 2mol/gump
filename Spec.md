@@ -1,5 +1,13 @@
 # Specifications
 
+## Decision Trees
+
+1. calculate entropy of classification.
+2. calculate the average entropies for each category (feature?).
+3. information gain = 1. - 2.
+    - observation: since we look for the max gain, we can just look at min avg entropy.
+
+## Example
 
 1. sepal length
 2. sepal width
@@ -13,7 +21,7 @@
 4,6 3,1 1,5 0,2 Iris-setosa
 5   3,6 1,4 0,2 Iris-setosa
 
-## Want
+### Want
 
 - a matrix where we keep track of all the indices, so that we can do recursive groupbys
 - elements should be in buckets, so we should convert Double to Int buckets
