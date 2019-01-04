@@ -2,10 +2,10 @@
 
 ## Decision Trees
 
-1. calculate entropy of classification.
-2. calculate the average entropies for each category (feature?).
-3. information gain = 1. - 2.
-    - observation: since we look for the max gain, we can just look at min avg entropy.
+1. calculate the entropy `H(S)` of classification (set `S`).
+2. calculate the average entropies `sum H(S_t)` for each feature/category `t` in `T`.
+3. information gain = `H(S) - sum H(S_t)`.
+    - observation: since we look for the max gain, we can just look at min avg entropy, because `H(S)` will stay the same.
 
 ## Example
 
