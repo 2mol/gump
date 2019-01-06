@@ -1,11 +1,11 @@
-{-# LANGUAGE ScopedTypeVariables#-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module DecisionTree where
 
 import qualified Data.Foldable as F
+import Data.Function ((&))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-
 import Data.Massiv.Array (Array, D, Ix1, Ix2(..), U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
 
@@ -165,6 +165,7 @@ irisData = A.fromLists' A.Par
     ]
 
 data IrisSpecies = Setosa | Versicolor | Virginica
+    deriving (Show, Eq, Ord)
 
 irisDataSpecies :: [IrisSpecies]
 irisDataSpecies =
@@ -369,9 +370,13 @@ groupByColumn matrix idx =
         insertRow :: Map e (Array D Ix2 e) -> Int -> Map e (Array D Ix2 e)
         insertRow dict rowIdx =
             M.insertWith
+                -- append vertically (stack row on bottom)
                 (A.append' 2)
+                -- key to insert:
                 (groupingVector <! rowIdx)
+                -- row to append:
                 (A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
+                -- our work-in-progress dictionary:
                 dict
     in
     F.foldl' insertRow M.empty [0..m-1]
@@ -383,6 +388,27 @@ dropColumn i matrix =
         right = A.extractFromTo' (0 :. i+1) (m :. n) matrix
     in
     A.append' 1 left right
+
+groupEntropies :: forall e1 e2 . (Ord e1, Ord e2)
+       => Array D Ix1 e1 -> Array D Ix1 e2 -> Map e1 Double
+groupEntropies vGrouper vTarget =
+    let
+        insertGroup :: Map e1 (Array D Ix1 e2) -> (e1, e2) -> Map e1 (Array D Ix1 e2)
+        insertGroup dict (e1, e2) =
+            M.insertWith (A.append' 1) e1 (A.singleton A.Par e2) dict
+    in
+    A.zip vGrouper vTarget
+        & F.foldl' insertGroup M.empty
+        & fmap entropy
+        -- & M.elems
+        -- & minimum
+
+groupEntropy :: forall e1 e2 . (Ord e1, Ord e2)
+       => Array D Ix1 e1 -> Array D Ix1 e2 -> Double
+groupEntropy vGrouper vTarget =
+    groupEntropies vGrouper vTarget
+        & M.elems
+        & minimum
 
 --
 
