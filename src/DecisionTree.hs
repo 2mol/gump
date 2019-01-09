@@ -390,25 +390,25 @@ dropColumn i matrix =
     A.append' 1 left right
 
 groupEntropies :: forall e1 e2 . (Ord e1, Ord e2)
-       => Array D Ix1 e1 -> Array D Ix1 e2 -> Map e1 Double
-groupEntropies vGrouper vTarget =
+    => Array D Ix1 e1 -> Array D Ix1 e2 -> Map e1 (Int, Double)
+groupEntropies groupingArray targetArray =
     let
         insertGroup :: Map e1 (Array D Ix1 e2) -> (e1, e2) -> Map e1 (Array D Ix1 e2)
         insertGroup dict (e1, e2) =
             M.insertWith (A.append' 1) e1 (A.singleton A.Par e2) dict
     in
-    A.zip vGrouper vTarget
-        & F.foldl' insertGroup M.empty
-        & fmap entropy
-        -- & M.elems
-        -- & minimum
+        A.zip groupingArray targetArray
+            & F.foldl' insertGroup M.empty
+            & fmap (\a -> (A.size a, entropy a))
 
 groupEntropy :: forall e1 e2 . (Ord e1, Ord e2)
-       => Array D Ix1 e1 -> Array D Ix1 e2 -> Double
-groupEntropy vGrouper vTarget =
-    groupEntropies vGrouper vTarget
+    => Array D Ix1 e1 -> Array D Ix1 e2 -> Double
+groupEntropy groupingArray targetArray =
+    groupEntropies groupingArray targetArray
         & M.elems
-        & minimum
+        & F.foldl' aggregate 0
+    where
+        aggregate a (count, entr) = a + entr / (fromIntegral count)
 
 --
 
