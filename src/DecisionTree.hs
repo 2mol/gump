@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module DecisionTree where
 
@@ -6,8 +7,9 @@ import qualified Data.Foldable as F
 import Data.Function ((&))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Massiv.Array (Array, D, Ix1, Ix2(..), U(..), Unbox, (<!))
+import Data.Massiv.Array (Array, D, M, Ix1, Ix2(..), U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
+import Data.Text (Text)
 
 
 irisData :: Array U Ix2 Double
@@ -164,161 +166,161 @@ irisData = A.fromLists' A.Par
     , [ 5.9, 3.0, 5.1, 1.8 ]
     ]
 
-data IrisSpecies = Setosa | Versicolor | Virginica
-    deriving (Show, Eq, Ord)
+-- data IrisSpecies = Setosa | Versicolor | Virginica
+    -- deriving (Show, Eq, Ord, Unbox)
 
-irisDataSpecies :: [IrisSpecies]
-irisDataSpecies =
-    [ Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Setosa
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Versicolor
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
-    , Virginica
+irisSpecies :: [Text]
+irisSpecies =
+    [ "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "setosa"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "versicolor"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
+    , "virginica"
     ]
 
 {-
@@ -390,7 +392,7 @@ dropColumn i matrix =
     A.append' 1 left right
 
 groupEntropies :: forall e1 e2 . (Ord e1, Ord e2)
-    => Array D Ix1 e1 -> Array D Ix1 e2 -> Map e1 (Int, Double)
+    => Array M Ix1 e1 -> Array M Ix1 e2 -> Map e1 (Int, Double)
 groupEntropies groupingArray targetArray =
     let
         insertGroup :: Map e1 (Array D Ix1 e2) -> (e1, e2) -> Map e1 (Array D Ix1 e2)
@@ -402,7 +404,7 @@ groupEntropies groupingArray targetArray =
             & fmap (\a -> (A.size a, entropy a))
 
 groupEntropy :: forall e1 e2 . (Ord e1, Ord e2)
-    => Array D Ix1 e1 -> Array D Ix1 e2 -> Double
+    => Array M Ix1 e1 -> Array M Ix1 e2 -> Double
 groupEntropy groupingArray targetArray =
     groupEntropies groupingArray targetArray
         & M.elems
