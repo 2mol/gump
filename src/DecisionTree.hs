@@ -10,6 +10,7 @@ import qualified Data.Map.Strict as M
 import Data.Massiv.Array (Array, D, M, Ix1, Ix2(..), U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
 import Data.Text (Text)
+import Data.Int (Int8)
 
 
 irisData :: Array U Ix2 Double
@@ -413,6 +414,12 @@ groupEntropy groupingArray targetArray =
         aggregate a (count, entr) = a + entr / (fromIntegral count)
 
 --
+
+-- categorize :: (Foldable t, Ord a) => t a -> Map Int8 a
+-- categorize things =
+    -- F.foldl' insert M.empty
+    -- where
+        -- insert = undefined
 
 main :: IO ()
 main = do
