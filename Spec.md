@@ -7,22 +7,6 @@
 3. information gain = `H(S) - sum H(S_t)`.
     - observation: since we look for the max gain, we can just look at min avg entropy, because `H(S)` will stay the same.
 
-## Example
-
-1. sepal length
-2. sepal width
-3. petal length
-4. petal width
-5. class
-
-```
-5,1 3,5 1,4 0,2 Iris-setosa
-4,9 3   1,4 0,2 Iris-setosa
-4,7 3,2 1,3 0,2 Iris-setosa
-4,6 3,1 1,5 0,2 Iris-setosa
-5   3,6 1,4 0,2 Iris-setosa
-```
-
 ### Want
 
 - a matrix where we keep track of all the indices, so that we can do recursive groupbys
@@ -35,14 +19,13 @@
 
 ## How
 
-Problems:
+Libraries we could have used:
 
-- how the FUCK do we just read in a csv and have something like a dataframe in haskell?
-    - cassava: couldn't figure out how to make number of columns dynamic
-    - frames?
-    - labels?
-    - hmatrix?
-    - massiv?
+- [hmatrix](http://hackage.haskell.org/package/hmatrix)
+- [massiv](http://hackage.haskell.org/package/massiv)
+- Some "dataframes" or row type style library (Frames, vinyl, ...).
+- [grids](http://hackage.haskell.org/package/grids)
+- no library, just list of lists
 
 ## Resources
 
@@ -51,28 +34,5 @@ Problems:
     - https://idontgetoutmuch.wordpress.com/2018/05/19/cartography-in-haskell/
     - https://github.com/idontgetoutmuch/psephology
 
-## Language choice
 
-### Python
-
-pros:
-
-- getting started quickly
-- having pandas
-- easy visualization (probably)
-
-cons:
-
-- no types
-
-### Haskell
-
-pros:
-
-- learning effect
-- types, conceptually clearer how data is transformed
-
-cons:
-
-- no dataframes
 
