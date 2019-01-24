@@ -1,16 +1,17 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module DecisionTree where
 
 import qualified Data.Foldable as F
 import Data.Function ((&))
+import Data.Int (Int8)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Massiv.Array (Array, D, M, Ix1, Ix2(..), U(..), Unbox, (<!))
+import Data.Massiv.Array (Array, D, Ix1, Ix2(..), M, U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
-import Data.Int (Int8)
 
 
 irisData :: Array U Ix2 Double
@@ -324,6 +325,20 @@ irisSpecies =
     , "virginica"
     ]
 
+irisClassMap :: Map Text Int8
+irisClassMap = M.fromList
+    [ ("setosa",     0)
+    , ("versicolor", 1)
+    , ("virginica",  2)
+    ]
+
+irisSpecies' :: Array U Ix1 Int8
+irisSpecies' =
+    irisSpecies
+        & fmap (\k -> M.lookup k irisClassMap)
+        & catMaybes
+        & A.fromList A.Par
+
 {-
 how to build a decision tree:
 
@@ -411,15 +426,26 @@ groupEntropy groupingArray targetArray =
         & M.elems
         & F.foldl' aggregate 0
     where
-        aggregate a (count, entr) = a + entr / (fromIntegral count)
+        aggregate a (count, entr) = a + entr / fromIntegral count
+
+groupEntropy' :: forall t a1 a2 . (Foldable t, Ord a1, Ord a2)
+    => t (a1, a2) -> Double
+groupEntropy' things =
+    things
+        & F.foldl' undefined M.empty
+        -- & fmap (\a -> (F.length a, entropy a))
+        & M.elems
+        & F.foldl' aggregate 0
+    where
+        aggregate a (count, entr) =
+            a + entr / fromIntegral count
 
 --
 
--- categorize :: (Foldable t, Ord a) => t a -> Map Int8 a
+--categorize :: (Foldable t, Ord a) => t a -> Map Int8 a
 -- categorize things =
-    -- F.foldl' insert M.empty
-    -- where
-        -- insert = undefined
+    -- F.foldl' (\dict k -> M.insert k () dict) M.empty things
+        -- & fmap undefined
 
 main :: IO ()
 main = do

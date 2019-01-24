@@ -1,1 +1,1 @@
---command="cabal new-repl"
+--command="cabal new-repl" --restart=gump.cabal

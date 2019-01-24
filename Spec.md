@@ -23,6 +23,7 @@ Libraries we could have used:
 
 - [hmatrix](http://hackage.haskell.org/package/hmatrix)
 - [massiv](http://hackage.haskell.org/package/massiv)
+- [accelerate](http://www.acceleratehs.org/get-started.html)
 - Some "dataframes" or row type style library (Frames, vinyl, ...).
 - [grids](http://hackage.haskell.org/package/grids)
 - no library, just list of lists
