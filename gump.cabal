@@ -15,8 +15,10 @@ extra-source-files:  Readme.md, Spec.md
 
 library
   exposed-modules:
-      DecisionTree
-  -- other-modules:
+      ID3
+  other-modules:
+      CommonMath
+    , TestData
   build-depends:
       base >=4.11.0.0
     , text
