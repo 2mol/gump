@@ -19,6 +19,8 @@ library
   other-modules:
       CommonMath
     , TestData
+    , TestData2
+    , Types
   build-depends:
       base >=4.11.0.0
     , text

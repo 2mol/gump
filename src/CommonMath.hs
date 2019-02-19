@@ -1,4 +1,3 @@
-
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module CommonMath where
@@ -7,6 +6,9 @@ import qualified Data.Foldable as F
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 
+
+-- functions to help tally the number of occurrences
+-- of list elements and their proportions:
 
 count :: forall t a . (Foldable t, Ord a)
     => t a -> Map a Int
@@ -26,8 +28,7 @@ proportions xs =
         n = fromIntegral $ length xs
 
 
--- "impurity" measures:
-
+-- different impurity measures:
 
 gini :: (Foldable t, Ord a) => t a -> Double
 gini xs =
