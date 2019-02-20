@@ -3,12 +3,12 @@
 module Types where
 
 
-newtype DataFrame = DataFrame ([Features], Results)
+newtype DataFrame = DataFrame ([Feature], Target)
 
 
-data Features
+data Feature
     = Categorical [Int]
     | Continuous [Double]
 
 
-newtype Results = Results [Int]
+newtype Target = Target [Int]
