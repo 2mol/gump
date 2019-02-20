@@ -8,9 +8,7 @@ newtype DataFrame = DataFrame ([Features], Results)
 
 data Features
     = Categorical [Int]
-    | Quantitative [Double]
+    | Continuous [Double]
 
 
 newtype Results = Results [Int]
-
-
