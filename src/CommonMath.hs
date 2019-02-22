@@ -3,7 +3,7 @@
 module CommonMath where
 
 import qualified Data.Foldable as F
-import Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 
 
@@ -32,12 +32,12 @@ proportions xs =
 
 gini :: (Foldable t, Ord a) => t a -> Double
 gini xs =
-    F.sum [p * (1-p) | p <- proportions xs]
+    sum [p * (1 - p) | p <- proportions xs]
 
 
 entropy :: (Foldable t, Ord a) => t a -> Double
 entropy xs =
-    -F.sum [p * logBase 2 p | p <- proportions xs]
+    -sum [p * logBase 2 p | p <- proportions xs]
 
 
 misclassification :: (Foldable t, Ord a) => t a -> Double

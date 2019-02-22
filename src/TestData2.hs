@@ -1,18 +1,15 @@
 module TestData2 where
 
--- import qualified Data.Foldable as F
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
-import Data.Tuple (swap)
+import Data.List (transpose)
 
-import Types
+import DataFrame
 
 
 irisDF :: DataFrame
 irisDF = undefined
 
 irisFeaturesData :: [[Double]]
-irisFeaturesData =
+irisFeaturesData = transpose
     [ [ 5.1, 3.5, 1.4, 0.2 ]
     , [ 4.9, 3.0, 1.4, 0.2 ]
     , [ 4.7, 3.2, 1.3, 0.2 ]
@@ -167,7 +164,7 @@ irisFeaturesData =
     , [ 5.9, 3.0, 5.1, 1.8 ]
     ]
 
-irisFeatures :: [Features]
+irisFeatures :: [Feature]
 irisFeatures = undefined
 
 
@@ -205,32 +202,6 @@ irisResultsData =
     , "virginica", "virginica", "virginica", "virginica", "virginica"
     ]
 
-irisResults :: Results
+irisResults :: Target
 irisResults = undefined
-
--- helper functions:
-
-transpose :: [[a]] -> [[a]]
-transpose = undefined
-
--- categorize :: Ord a => [a] -> ([Int], Map Int a)
--- categorize xs = undefined
-    -- F.foldl' insertCategory M.empty xs
-    -- where
-        -- insertCategory :: Map a Int -> a -> Map a Int
-        -- insertCategory categoryMap x = M.insertWith (+) x 1 counter
-
--- want:
-
-categorize :: [a] -> Map Int a
-categorize = undefined
-
-uniques :: [a] -> Map a ()
-uniques = undefined
-
-bla :: Map a () -> Map a Int
-bla = undefined
-
-reverseMap :: Ord v => Map k v -> Map v k
-reverseMap = M.fromList . map swap . M.toList
 

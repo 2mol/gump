@@ -20,7 +20,7 @@ library
       CommonMath
     , TestData
     , TestData2
-    , Types
+    , DataFrame
   build-depends:
       base >=4.11.0.0
     , text
