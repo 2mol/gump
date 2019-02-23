@@ -2,11 +2,13 @@ module TestData2 where
 
 import Data.List (transpose)
 
-import DataFrame
+import qualified DataFrame as DF
 
 
-irisDF :: DataFrame
-irisDF = undefined
+irisDF :: DF.DataFrame
+irisDF =
+    DF.makeDataFrame' irisFeaturesData irisTargetData
+
 
 irisFeaturesData :: [[Double]]
 irisFeaturesData = transpose
@@ -164,12 +166,9 @@ irisFeaturesData = transpose
     , [ 5.9, 3.0, 5.1, 1.8 ]
     ]
 
-irisFeatures :: [Feature]
-irisFeatures = undefined
 
-
-irisResultsData :: [String]
-irisResultsData =
+irisTargetData :: [String]
+irisTargetData =
     [ "setosa", "setosa", "setosa", "setosa", "setosa"
     , "setosa", "setosa", "setosa", "setosa", "setosa"
     , "setosa", "setosa", "setosa", "setosa", "setosa"
@@ -201,7 +200,4 @@ irisResultsData =
     , "virginica", "virginica", "virginica", "virginica", "virginica"
     , "virginica", "virginica", "virginica", "virginica", "virginica"
     ]
-
-irisResults :: Target
-irisResults = undefined
 
