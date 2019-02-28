@@ -18,7 +18,7 @@ newtype Target = Target [Int]
 
 -- helper functions
 
-categorize :: [a] -> Map Int a
+categorize :: Eq a => [a] -> Map Int a
 categorize = undefined
 
 -- uniques :: [a] -> Map a ()
@@ -27,11 +27,11 @@ categorize = undefined
 -- bla :: Map a () -> Map a Int
 -- bla = undefined
 
-reverseMap :: Ord v => Map k v -> Map v k
-reverseMap = M.fromList . map swap . M.toList
+reverseDict :: Ord v => Map k v -> Map v k
+reverseDict = M.fromList . map swap . M.toList
 
 
-makeDataFrame' :: [[Double]] -> [a] -> DataFrame
+makeDataFrame' :: Eq a => [[Double]] -> [a] -> DataFrame
 makeDataFrame' featuresData targetData =
     DataFrame (featureVectors, targetVector)
     where

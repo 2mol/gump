@@ -4,7 +4,6 @@ name:                gump
 version:             0.1.0
 synopsis:            Figuring out decision trees and random forests.
 -- description:
--- bug-reports:
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Juri Chomé
@@ -17,20 +16,18 @@ library
   exposed-modules:
       ID3
   other-modules:
-      CommonMath
+      Impurity
     , TestData
-    , TestData2
-    , DataFrame
   build-depends:
       base >=4.11.0.0
     , text
     , bytestring
     , containers
-    , vector
-    , massiv
-    , cassava
-    , hmatrix
-    , Frames
+    -- , vector
+    -- , massiv
+    -- , cassava
+    -- , hmatrix
+    -- , Frames
     -- , Chart
     -- , sv
   hs-source-dirs: src

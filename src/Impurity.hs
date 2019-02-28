@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module CommonMath where
+module Impurity where
 
 import qualified Data.Foldable as F
 import           Data.Map.Strict (Map)
@@ -43,3 +43,4 @@ entropy xs =
 misclassification :: (Foldable t, Ord a) => t a -> Double
 misclassification xs =
     1 - maximum (proportions xs)
+

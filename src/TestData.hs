@@ -1,19 +1,17 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module TestData where
 
-import Data.Int (Int8)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
-import qualified Data.Massiv.Array as A
-import Data.Text (Text)
-import Data.Massiv.Array (Array, U(..), Ix1, Ix2)
-import Data.Function ((&))
-import Data.Maybe (catMaybes)
+import Data.List (transpose)
+
+import qualified ID3
 
 
-irisData :: Array U Ix2 Double
-irisData = A.fromLists' A.Par
+irisDF :: ID3.DataFrame
+irisDF =
+    ID3.makeDataFrame' irisFeaturesData irisTargetData
+
+
+irisFeaturesData :: [[Double]]
+irisFeaturesData = transpose
     [ [ 5.1, 3.5, 1.4, 0.2 ]
     , [ 4.9, 3.0, 1.4, 0.2 ]
     , [ 4.7, 3.2, 1.3, 0.2 ]
@@ -64,6 +62,7 @@ irisData = A.fromLists' A.Par
     , [ 4.6, 3.2, 1.4, 0.2 ]
     , [ 5.3, 3.7, 1.5, 0.2 ]
     , [ 5.0, 3.3, 1.4, 0.2 ]
+
     , [ 7.0, 3.2, 4.7, 1.4 ]
     , [ 6.4, 3.2, 4.5, 1.5 ]
     , [ 6.9, 3.1, 4.9, 1.5 ]
@@ -114,6 +113,7 @@ irisData = A.fromLists' A.Par
     , [ 6.2, 2.9, 4.3, 1.3 ]
     , [ 5.1, 2.5, 3.0, 1.1 ]
     , [ 5.7, 2.8, 4.1, 1.3 ]
+
     , [ 6.3, 3.3, 6.0, 2.5 ]
     , [ 5.8, 2.7, 5.1, 1.9 ]
     , [ 7.1, 3.0, 5.9, 2.1 ]
@@ -166,173 +166,38 @@ irisData = A.fromLists' A.Par
     , [ 5.9, 3.0, 5.1, 1.8 ]
     ]
 
--- data IrisSpecies = Setosa | Versicolor | Virginica
-    -- deriving (Show, Eq, Ord, Unbox)
 
-irisSpecies :: [Text]
-irisSpecies =
-    [ "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "setosa"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "versicolor"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
-    , "virginica"
+irisTargetData :: [String]
+irisTargetData =
+    [ "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "setosa", "setosa", "setosa", "setosa", "setosa"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "versicolor", "versicolor", "versicolor", "versicolor", "versicolor"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
+    , "virginica", "virginica", "virginica", "virginica", "virginica"
     ]
 
-irisClassMap :: Map Text Int8
-irisClassMap = M.fromList
-    [ ("setosa",     0)
-    , ("versicolor", 1)
-    , ("virginica",  2)
-    ]
-
-irisSpecies' :: Array U Ix1 Int8
-irisSpecies' =
-    irisSpecies
-        & fmap (\k -> M.lookup k irisClassMap)
-        & catMaybes
-        & A.fromList A.Par
