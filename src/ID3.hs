@@ -28,11 +28,11 @@ TODO
 
 
 newtype DataFrame =
-    DataFrame ([VecFeature], VecTarget)
+    DataFrame ([Feature], Target)
 
-newtype VecFeature = VecFeature [Word8]
+newtype Feature = Feature [Word8]
 
-newtype VecTarget = VecTarget [Word8]
+newtype Target = Target [Word8]
 
 
 -- makeDataFrame' :: (Ord a, Ord b) => [[a]] -> [b] -> DataFrame
@@ -40,22 +40,20 @@ makeDataFrame' :: [[a]] -> [b] -> DataFrame
 makeDataFrame' =
     undefined
 
--- | Takes a list of values of any orderable type and assigns an 8-bit unsigned
--- integer to them.
-categorize :: Ord a => [a] -> Map Word8 a
+-- | Takes a list of values of any orderable type and assigns an 8-bit
+-- unsigned integer to them.
+categorize :: Ord a => [a] -> Map a Word8
 categorize xs =
     zip xs (repeat ())
         & M.fromList
-        & assignCategories
-        & reverseMap
+        & errOnTooManyElems
+        & M.mapAccum (\acc () -> (acc+1, acc)) 0
+        & snd
     where
-        assignCategories :: Map a () -> Map a Word8
-        assignCategories dict =
-            M.mapAccum (\acc () -> (acc+1, acc)) 0 dict
-                & snd
-
-        agg :: Word8 -> () -> (Word8, Word8)
-        agg
+        errOnTooManyElems d =
+            if M.size d > fromIntegral (maxBound :: Word8) + 1
+               then error "too many elements to categorize"
+               else d
 
 -- | Reverses a 'Map' from key -> val to val -> key.
 -- Duplicate values and their respective keys will be lost,
