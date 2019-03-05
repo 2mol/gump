@@ -26,7 +26,6 @@ how to build a decision tree with categorical data:
 TODO
 -}
 
-
 newtype DataFrame =
     DataFrame ([Feature], Target)
     deriving (Show)
@@ -40,10 +39,10 @@ newtype Target = Target [Word8]
 
 makeDataFrame' :: (Ord a, Ord b) => [[a]] -> [b] -> DataFrame
 makeDataFrame' featuresData targetData =
-    DataFrame (features, target)
+    DataFrame (feat, targ)
     where
-        features = map (Feature . categorize') featuresData
-        target = Target $ categorize' targetData
+        feat = map (Feature . categorize') featuresData
+        targ = Target $ categorize' targetData
 
 -- | Takes a list of values of any orderable type and assigns an 8-bit
 -- unsigned integer to them.
@@ -60,6 +59,7 @@ categorize xs =
                then error "too many elements to categorize"
                else d
 
+-- | apply a categorization to a list of values.
 categorize' :: Ord a => [a] -> [Word8]
 categorize' xs =
     map (\x -> categoriesMap ! x) xs
