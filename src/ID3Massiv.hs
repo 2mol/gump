@@ -18,13 +18,13 @@ import Data.Function ((&))
 -- import Data.Int (Int8)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Massiv.Array (Array, D, Ix1, Ix2(..), M, U(..), Unbox, (<!))
+import Data.Massiv.Array (Array, D, DL, Ix1, Ix2(..), U(..), Unbox, (<!), Sz(..))
 import qualified Data.Massiv.Array as A
 -- import Data.Maybe (catMaybes)
 -- import Data.Text (Text)
 
 -- import TestData
-import CommonMath (entropy)
+import Impurity (entropy)
 
 {-
 how to build a decision tree:
@@ -40,60 +40,65 @@ how to build a decision tree:
 -}
 
 -- generic groupBy
-
 groupByColumn :: forall e . (Unbox e, Ord e)
-    => Array D Ix2 e -> Int -> Map e (Array D Ix2 e)
+    => Array D Ix2 e -> Int -> Map e (Array U Ix2 e)
 groupByColumn matrix idx =
     let
-        (m :. n) = A.size matrix
+        Sz (m :. n) = A.size matrix
 
         groupingVector :: Array U Ix1 e
         groupingVector = A.compute (matrix <! idx)
 
-        matrix' = dropColumn idx matrix
+        matrix' = A.computeAs U $ dropColumn idx matrix
 
-        insertRow :: Map e (Array D Ix2 e) -> Int -> Map e (Array D Ix2 e)
+        insertRow :: Map e (Array U Ix2 e) -> Int -> Map e (Array U Ix2 e)
         insertRow dict rowIdx =
             M.insertWith
                 -- append vertically (stack row on bottom)
-                (A.append' 2)
+                (\a b -> A.computeAs U $ A.append' 2 a b)
                 -- key to insert:
                 (groupingVector <! rowIdx)
                 -- row to append:
-                (A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
+                (A.computeAs U $ A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
                 -- our work-in-progress dictionary:
                 dict
     in
     F.foldl' insertRow M.empty [0..m-1]
 
-dropColumn :: Int -> Array D Ix2 e -> Array D Ix2 e
+
+-- TODO: submit this fn as PR
+-- in module D.M.A.Ops.Transform
+dropColumn :: Int -> Array D Ix2 e -> Array DL Ix2 e
 dropColumn i matrix =
-    let (m :. n) = A.size matrix
+    let Sz (m :. n) = A.size matrix
         left  = A.extractFromTo' (0 :. 0)   (m :. i) matrix
         right = A.extractFromTo' (0 :. i+1) (m :. n) matrix
     in
     A.append' 1 left right
 
-groupEntropies :: forall e1 e2 . (Ord e1, Ord e2)
-    => Array M Ix1 e1 -> Array M Ix1 e2 -> Map e1 (Int, Double)
+
+groupEntropies :: forall e1 e2 . (Ord e1, Ord e2, Unbox e1, Unbox e2)
+    => Array U Ix1 e1 -> Array U Ix1 e2 -> Map e1 (Int, Double)
 groupEntropies groupingArray targetArray =
     let
-        insertGroup :: Map e1 (Array D Ix1 e2) -> (e1, e2) -> Map e1 (Array D Ix1 e2)
+        insertGroup :: Map e1 (Array U Ix1 e2) -> (e1, e2) -> Map e1 (Array U Ix1 e2)
         insertGroup dict (e1, e2) =
-            M.insertWith (A.append' 1) e1 (A.singleton A.Par e2) dict
+            M.insertWith (\a b -> A.compute $ A.append' 1 a b) e1 (A.singleton e2) dict
     in
         A.zip groupingArray targetArray
             & F.foldl' insertGroup M.empty
-            & fmap (\a -> (A.size a, entropy a))
+            & fmap (\a -> (A.unSz $ A.size a, entropy (A.toList a))) -- TODO: rather fix entropy
 
-groupEntropy :: forall e1 e2 . (Ord e1, Ord e2)
-    => Array M Ix1 e1 -> Array M Ix1 e2 -> Double
+
+groupEntropy :: forall e1 e2 . (Ord e1, Ord e2, Unbox e1, Unbox e2)
+    => Array U Ix1 e1 -> Array U Ix1 e2 -> Double
 groupEntropy groupingArray targetArray =
     groupEntropies groupingArray targetArray
         & M.elems
         & F.foldl' aggregate 0
     where
         aggregate a (count, entr) = a + entr / fromIntegral count
+
 
 groupEntropy' :: forall t a1 a2 . (Foldable t)
     => t (a1, a2) -> Double
@@ -108,6 +113,7 @@ groupEntropy' things =
         aggregate a (count, entr) =
             a + entr / fromIntegral count
 
+
 --
 
 --categorize :: (Foldable t, Ord a) => t a -> Map Int8 a
@@ -119,4 +125,3 @@ main :: IO ()
 main = do
     putStrLn "fafa"
     pure ()
-

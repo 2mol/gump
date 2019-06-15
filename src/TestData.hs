@@ -2,12 +2,12 @@ module TestData where
 
 import Data.List (transpose)
 
-import qualified ID3
+-- import qualified ID3
 
 
-irisDF :: ID3.DataFrame
-irisDF =
-    ID3.makeDataFrame' irisFeaturesData irisTargetData
+-- irisDF :: ID3.DataFrame
+-- irisDF =
+--     ID3.makeDataFrame' irisFeaturesData irisTargetData
 
 
 irisFeaturesData :: [[Double]]
@@ -200,4 +200,3 @@ irisTargetData =
     , "virginica", "virginica", "virginica", "virginica", "virginica"
     , "virginica", "virginica", "virginica", "virginica", "virginica"
     ]
-

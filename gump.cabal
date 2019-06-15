@@ -18,13 +18,14 @@ library
   other-modules:
       Impurity
     , TestData
+    , ID3Massiv
   build-depends:
       base >=4.11.0.0
     , text
     , bytestring
     , containers
     -- , vector
-    -- , massiv
+    , massiv
     -- , cassava
     -- , hmatrix
     -- , Frames
