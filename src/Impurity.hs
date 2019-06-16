@@ -27,7 +27,7 @@ proportions xs =
 
 -- entropy measure
 -- https://en.wikipedia.org/wiki/Entropy#Statistical_mechanics
-entropy :: Ord a => [a] -> Double
+entropy :: (Foldable t, Ord a) => t a -> Double
 entropy xs =
     -sum [p * logBase 2 p | p <- proportions xs]
 

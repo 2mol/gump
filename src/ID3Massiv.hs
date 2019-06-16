@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ID3Massiv where
@@ -14,17 +13,14 @@ unseen data.
 -}
 
 import qualified Data.Foldable as F
-import Data.Function ((&))
--- import Data.Int (Int8)
-import Data.Map.Strict (Map)
+import           Data.Function ((&))
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Massiv.Array (Array, D, DL, Ix1, Ix2(..), U(..), Unbox, (<!), Sz(..))
+import           Data.Massiv.Array
+  (Array, D, DL, Ix1, Ix2(..), Sz(..), U(..), Unbox, (<!))
 import qualified Data.Massiv.Array as A
--- import Data.Maybe (catMaybes)
--- import Data.Text (Text)
 
--- import TestData
-import Impurity (entropy)
+import           Impurity (entropy)
 
 {-
 how to build a decision tree:
@@ -85,9 +81,10 @@ groupEntropies groupingArray targetArray =
         insertGroup dict (e1, e2) =
             M.insertWith (\a b -> A.compute $ A.append' 1 a b) e1 (A.singleton e2) dict
     in
-        A.zip groupingArray targetArray
-            & F.foldl' insertGroup M.empty
-            & fmap (\a -> (A.unSz $ A.size a, entropy (A.toList a))) -- TODO: rather fix entropy
+    A.zip groupingArray targetArray
+        & F.foldl' insertGroup M.empty
+        & fmap A.toManifest
+        & fmap (\a -> (A.unSz $ A.size a, entropy a))
 
 
 groupEntropy :: forall e1 e2 . (Ord e1, Ord e2, Unbox e1, Unbox e2)
@@ -105,23 +102,9 @@ groupEntropy' :: forall t a1 a2 . (Foldable t)
 groupEntropy' things =
     things
         & F.foldl' undefined M.empty
-        -- & fmap (\a -> (F.length a, entropy a))
         & M.elems
         & F.foldl' aggregate 0
     where
         aggregate :: Double -> (Int, Double) -> Double
         aggregate a (count, entr) =
             a + entr / fromIntegral count
-
-
---
-
---categorize :: (Foldable t, Ord a) => t a -> Map Int8 a
--- categorize things =
-    -- F.foldl' (\dict k -> M.insert k () dict) M.empty things
-        -- & fmap undefined
-
-main :: IO ()
-main = do
-    putStrLn "fafa"
-    pure ()
