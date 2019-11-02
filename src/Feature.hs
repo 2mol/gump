@@ -1,82 +1,61 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
+import           Control.Monad.RWS (runRWS)
+import           Control.Monad.State (state)
+import           Control.Monad.Writer (tell)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Csv as Csv
 import qualified Data.Graph.Inductive.Graph as Graph
+import           Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.HashSet as HS
 import           Data.List
-import Control.Monad.RWS (runRWS)
-import Control.Monad.Writer (tell)
-import Control.Monad.State (state)
 import qualified Data.Map as Map
 import           Data.Ord (comparing)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Impurity
 
 --------------------------------------------------------------------------------
 
--- | s: [Double]
---   a: Double
---
---   s: Survivor = Survivor {age :: Int, ... sex :: Sex }
---   a: Sex
-data Feature s a = Feature
-    { name    :: String
-    , extract :: s -> a
-    , splits  :: [a] -> [Split a]
-    }
-
-data Split a = Split String String (a -> Bool)
+data Feature s where
+    Feature :: String -> (s -> a) -> Strategy a -> Feature s
 
 instance Show (Split a) where
     show (Split x y _) = "Split " ++ show x ++ " " ++ show y ++ " _"
 
-bool :: Feature Bool Bool
-bool = Feature
-    { name    = "bool"
-    , extract = id
-    , splits  = \_ -> [Split "True" "False" id]
-    }
+type Strategy a = V.Vector a -> [Split a]
 
-int :: Feature Int Int
-int = Feature
-    { name    = "int"
-    , extract = id
-    , splits  = \ints ->
-        [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
-        | pivot <- drop 1 $ nub $ sort ints
-        ]
-    }
+data Split a = Split String String (a -> Bool)
 
-float :: Feature Float Float
-float = Feature
-    { name    = "float"
-    , extract = id
-    , splits  = \floats ->
-        if null floats
-            then []
-            else
-                let lo   = minimum floats
-                    hi   = maximum floats
-                    step = (hi - lo) / 100.0 in
-                [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
-                | pivot <- [lo + step, lo + 2 * step .. hi]
-                ]
-    }
+bool :: Strategy Bool
+bool = const [Split "True" "False" id]
 
-distinct :: (Eq a, Show a) => Feature a a
-distinct = Feature
-    { name    = "distinct"
-    , extract = id
-    , splits  = \values ->
-        [ Split ("== " ++ show val) ("!= " ++ show val) (\x -> x == val)
-        | val <- values
-        ]
-    }
+int :: Strategy Int
+int ints =
+    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    | pivot <- Set.toAscList $ V.foldl' (flip Set.insert) Set.empty ints
+    ]
 
+float :: Strategy Float
+float floats | V.null floats = []
+float floats =
+    let lo   = minimum floats
+        hi   = maximum floats
+        step = (hi - lo) / 100.0 in
+    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    | pivot <- [lo + step, lo + 2 * step .. hi]
+    ]
 
+distinct :: (Eq a, Show a) => Strategy a
+distinct values =
+    [ Split ("== " ++ show val) ("!= " ++ show val) (\x -> x == val)
+    | val <- nub $ V.toList values
+    ]
 
 --------------------------------------------------------------------------------
 
@@ -96,42 +75,69 @@ instance Csv.FromRecord Iris where
         <*> v Csv..! 3
         <*> v Csv..! 4
 
-irisFeatures :: [Feature Iris Float]
+irisFeatures :: [Feature Iris]
 irisFeatures =
-    [ float {extract = sepalLength, name = "sepalLength"}
-    , float {extract = sepalWidth, name = "sepalWidth"}
-    , float {extract = petalLength, name = "petalLength"}
-    , float {extract = petalWidth, name = "petalWidth"}
+    [ Feature "sepal length"  sepalLength float
+    , Feature "sepal width"   sepalWidth  float
+    , Feature "petal length"  petalLength float
+    , Feature "petal width"   petalWidth  float
     ]
 
+data Histogram a = Histogram !(HMS.HashMap a Int) !Int
+
+instance (Eq a, Hashable a) => Semigroup (Histogram a) where
+    Histogram m1 t1 <> Histogram m2 t2 =
+        Histogram (HMS.unionWith (+) m1 m2) (t1 + t2)
+
+instance (Eq a, Hashable a) => Monoid (Histogram a) where
+    mempty = Histogram HMS.empty 0
+
+singleton :: (Eq a, Hashable a) => a -> Histogram a
+singleton x = Histogram (HMS.singleton x 1) 1
+
+entropy :: (Eq a, Hashable a) => Histogram a -> Double
+entropy (Histogram histo t) = -sum
+    [ let p = (fromIntegral c / fromIntegral t) in p * logBase 2 p
+    | (_, c) <- HMS.toList histo
+    ]
+
+total :: Histogram a -> Int
+total (Histogram _ t) = t
+
 gains
-    :: forall a b t. Ord t => (a -> t) -> Feature a b -> V.Vector a
-    -> [(Split b, (Double, V.Vector a, V.Vector a))]
-gains mkTarget feature datas = do
-    split@(Split _ _ f) <- splits feature (map (extract feature) $ V.toList datas)
-    return (split, gain split)
+    :: forall a t. (Eq t, Hashable t, Ord t) => (a -> t) -> Feature a -> V.Vector a
+    -> [(Split a, Double)]
+gains target (Feature _ extract strategy) datas = do
+    split <- strategy column
+    case split of
+        Split l r f ->
+            let (xs, ys) = V.foldl'
+                    (\(!xhisto, !yhisto) (x, t) ->
+                        if f x
+                            then (xhisto <> singleton t, yhisto)
+                            else (xhisto, yhisto <> singleton t))
+                    mempty
+                    (V.zip column targets)
+
+                px   = fromIntegral (total xs) / numTotal
+                py   = fromIntegral (total ys) / numTotal
+                ex   = entropy xs
+                ey   = entropy ys
+                gain = (targetEntropy - (px * ex + py * ey)) in
+            return (Split l r (f . extract), gain)
   where
-    target   = V.map mkTarget datas
-    numTotal = fromIntegral (V.length target)
+    column   = V.map extract datas
+    targets  = V.map target  datas
+    numTotal = fromIntegral (V.length targets)
 
-    targetEntropy = Impurity.entropy target
+    targetEntropy = entropy $ foldMap singleton targets
 
-    gain :: Split b -> (Double, V.Vector a, V.Vector a)
-    gain (Split _ _ f) =
-        let (xs, ys)  = V.partition (f . extract feature . fst) $ V.zip datas target
-            propXs    = fromIntegral (V.length xs) / numTotal
-            propYs    = fromIntegral (V.length ys) / numTotal
-            xsEntropy = Impurity.entropy (V.map snd xs)
-            ysEntropy = Impurity.entropy (V.map snd ys) in
-        (targetEntropy - (propXs * xsEntropy + propYs * ysEntropy), V.map fst xs, V.map fst ys)
-
-data Tree a b t
-    = Leaf t Double
-    | Branch String (Split b) (Tree a b t) (Tree a b t)
-    deriving (Show)
+data Tree a t
+    = Leaf   t Double
+    | Branch String (Split a) (Tree a t) (Tree a t)
 
 treeToGraph
-    :: Show t => (t -> String) -> Tree a b t -> [String]
+    :: Show t => (t -> String) -> Tree a t -> [String]
 treeToGraph mkLeafLabel tree =
     let (_, _, strs) = runRWS (toGraph tree) () 0 in strs
   where
@@ -157,8 +163,7 @@ treeToGraph mkLeafLabel tree =
 
     fresh = state $ \counter -> ("node" ++ show counter, counter + 1)
 
-
-printTree :: Show t => Tree a b t -> [String]
+printTree :: Show t => Tree a t -> [String]
 printTree (Leaf x d) = [show x ++ " (" ++ show d ++ ")"]
 printTree (Branch attr (Split ledge redge _) ltree rtree) =
     [attr] ++
@@ -167,39 +172,41 @@ printTree (Branch attr (Split ledge redge _) ltree rtree) =
     [" " ++ redge] ++
     map ("  " ++) (printTree rtree)
 
-makeLeaf :: Ord t => (a -> t) -> V.Vector a -> Tree a b t
-makeLeaf mkTarget datas =
-    let tally           = Impurity.tally (fmap mkTarget datas)
-        total           = fromIntegral $ V.length datas
-        (target, count) = maximumBy (comparing snd) (Map.toList tally) in
-    Leaf target (fromIntegral count / total)
+makeLeaf :: Ord t => (a -> t) -> V.Vector a -> Tree a t
+makeLeaf target datas =
+    let tally      = Impurity.tally (fmap target datas)
+        total      = fromIntegral $ V.length datas
+        (t, count) = maximumBy (comparing snd) (Map.toList tally) in
+    Leaf t (fromIntegral count / total)
 
 makeTree
-    :: forall a b t. Ord t
-    => Int            -- ^ Max depth
-    -> (a -> t)       -- ^ Target
-    -> [Feature a b]  -- ^ Features
-    -> V.Vector a     -- ^ Data
-    -> Tree a b t
-makeTree maxDepth mkTarget features = go 0
+    :: forall a t. (Hashable t, Ord t)
+    => Int          -- ^ Max depth
+    -> (a -> t)     -- ^ Target
+    -> [Feature a]  -- ^ Features
+    -> V.Vector a   -- ^ Data
+    -> Tree a t
+makeTree maxDepth target features = go 0
   where
     go depth datas | depth >= maxDepth =
-        makeLeaf mkTarget datas
+        makeLeaf target datas
 
-    go depth datas | [single] <- nub (map mkTarget $ V.toList datas) =
+    go depth datas | [single] <- nub (map target $ V.toList datas) =
         Leaf single 1.0
 
     go depth datas =
-        let allGains :: [(String, (Split b, (Double, V.Vector a, V.Vector a)))]
+        let allGains :: [(String, (Split a, Double))]
             allGains =
-                [ (name feature, gain)
-                | feature <- features
-                , gain    <- gains mkTarget feature datas
+                [ (name, gain)
+                | feature@(Feature name _ _) <- features
+                , gain                       <- gains target feature datas
                 ]
 
-            (fname, (split@(Split _ _ f), (_, xs, ys))) =
-                maximumBy (comparing (\(_, (_, (g, _, _))) -> g))
-                allGains in
+            (fname, (split@(Split _ _ f), _)) =
+                maximumBy (comparing (\(_, (_, g)) -> g))
+                allGains
+
+            (xs, ys) = V.partition f datas in
 
         Branch fname split
             (go (depth + 1) xs)
