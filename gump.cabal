@@ -25,6 +25,7 @@ library
     , text
     , bytestring
     , containers
+    , pretty-show
     -- , vector
     , massiv
     -- , cassava

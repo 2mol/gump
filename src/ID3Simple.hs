@@ -1,17 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main where
+module ID3Simple where
 
-import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import           Text.Show.Pretty (pPrint)
 
 main :: IO ()
 main = do
     let groupedByColumn1 = groupBy exampleTable 1
+    putStrLn "will group by the second column on the following matrix:"
+    pPrint exampleTable
     if groupedByColumn1 == expectedGroupByColumn1
         then putStrLn "\\( ﾟヮﾟ)/  yay"
         else putStrLn "(✖╭╮✖)  oh no"
-    print groupedByColumn1
+    pPrint groupedByColumn1
 
 groupBy :: forall v . Ord v => [[v]] -> Int -> Map v [[v]]
 groupBy table columnIndex =
