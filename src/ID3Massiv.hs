@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ID3Massiv where
@@ -16,9 +17,7 @@ import qualified Data.Foldable as F
 import           Data.Function ((&))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Massiv.Array
-  (Array, D, DL, Ix1, Ix2(..), Sz(..), U(..), Unbox, (<!))
-import qualified Data.Massiv.Array as A
+import           Data.Massiv.Array as A
 
 import           Impurity (entropy)
 
@@ -47,44 +46,60 @@ groupByColumn matrix idx =
 
         matrix' = A.computeAs U $ dropColumn idx matrix
 
-        insertRow :: Map e (Array U Ix2 e) -> Int -> Map e (Array U Ix2 e)
+    -- Alternative solution, that could be faster. Benchmarking would determine
+    --     insertRow :: Map e (Array U Ix2 e) -> Int -> Map e (Array U Ix2 e)
+    --     insertRow dict rowIdx =
+    --         M.insertWith
+    --             -- append vertically (stack row on bottom)
+    --             (\a b -> A.computeAs U $ A.append' 2 a b)
+    --             -- key to insert:
+    --             (groupingVector <! rowIdx)
+    --             -- row to append:
+    --             (A.computeAs U $ A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
+    --             -- our work-in-progress dictionary:
+    --             dict
+    -- in
+    -- F.foldl' insertRow M.empty [0..m-1]
+        insertRow :: Map e (Array DL Ix1 e) -> Int -> Map e (Array DL Ix1 e)
         insertRow dict rowIdx =
             M.insertWith
-                -- append vertically (stack row on bottom)
-                (\a b -> A.computeAs U $ A.append' 2 a b)
+                -- append rows one after another, at the end they will get stacked row on bottom
+                (<>)
                 -- key to insert:
-                (groupingVector <! rowIdx)
+                (groupingVector ! rowIdx)
                 -- row to append:
-                (A.computeAs U $ A.extractFromTo' (rowIdx :. 0) (rowIdx+1 :. n-1) matrix')
+                (toLoadArray (matrix' !> rowIdx))
                 -- our work-in-progress dictionary:
                 dict
     in
-    F.foldl' insertRow M.empty [0..m-1]
+    unflatten' (n - 1) . A.computeAs U <$> F.foldl' insertRow M.empty [0..m-1]
+
+-- | Take a flat vector and a number of columns and turn it into a matrix.
+unflatten' ::
+     (Load r Ix1 e, Resize r Ix1) => Ix1 -> Array r Ix1 e -> Array r Ix2 e
+unflatten' n arr
+  | n <= 0 || isEmpty arr = resize' (Sz2 (unSz (size arr)) 0) arr
+  | otherwise =
+    case quotRem (unSz (size arr)) n of
+      (r, _) -> resize' (Sz2 r n) arr
 
 
--- TODO: submit this fn as PR
--- in module D.M.A.Ops.Transform
 dropColumn :: Int -> Array D Ix2 e -> Array DL Ix2 e
-dropColumn i matrix =
-    let Sz (m :. n) = A.size matrix
-        left  = A.extractFromTo' (0 :. 0)   (m :. i) matrix
-        right = A.extractFromTo' (0 :. i+1) (m :. n) matrix
-    in
-    A.append' 1 left right
+dropColumn i = either A.throw id . A.deleteColumnsM i 1
 
 
 groupEntropies :: forall e1 e2 . (Ord e1, Ord e2, Unbox e1, Unbox e2)
     => Array U Ix1 e1 -> Array U Ix1 e2 -> Map e1 (Int, Double)
 groupEntropies groupingArray targetArray =
     let
-        insertGroup :: Map e1 (Array U Ix1 e2) -> (e1, e2) -> Map e1 (Array U Ix1 e2)
+        insertGroup :: Map e1 (Array DL Ix1 e2) -> (e1, e2) -> Map e1 (Array DL Ix1 e2)
         insertGroup dict (e1, e2) =
-            M.insertWith (\a b -> A.compute $ A.append' 1 a b) e1 (A.singleton e2) dict
+            M.insertWith (<>) e1 (A.singleton e2) dict
     in
     A.zip groupingArray targetArray
         & F.foldl' insertGroup M.empty
-        & fmap A.toManifest
-        & fmap (\a -> (A.unSz $ A.size a, entropy a))
+        & fmap A.toLoadArray
+        & fmap (\a -> (A.unSz $ A.size a, entropy $ toManifest $ computeAs U a))
 
 
 groupEntropy :: forall e1 e2 . (Ord e1, Ord e2, Unbox e1, Unbox e2)

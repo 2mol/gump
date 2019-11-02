@@ -3,7 +3,7 @@ cabal-version:       2.4
 name:                gump
 version:             0.1.0
 synopsis:            Figuring out decision trees and random forests.
--- description:
+description:         Random forest, but dumb.
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Juri Chomé
@@ -20,13 +20,20 @@ library
     , TestData
     , ID3Simple
     , ID3Massiv
+    , Feature
   build-depends:
       base >=4.11.0.0
     , text
     , bytestring
     , containers
+    , pretty-show
     -- , vector
     , massiv
+    , mtl
+    , vector
+    , unordered-containers
+    , cassava
+    , fgl
     -- , cassava
     -- , hmatrix
     -- , Frames

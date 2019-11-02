@@ -1,24 +1,22 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+module Feature where
+
 import           Control.Monad.RWS (runRWS)
 import           Control.Monad.State (state)
 import           Control.Monad.Writer (tell)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Csv as Csv
-import qualified Data.Graph.Inductive.Graph as Graph
 import           Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.HashSet as HS
 import           Data.List
-import qualified Data.Map as Map
 import           Data.Ord (comparing)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import qualified Impurity
 
 --------------------------------------------------------------------------------
 
@@ -105,7 +103,7 @@ total :: Histogram a -> Int
 total (Histogram _ t) = t
 
 gains
-    :: forall a t. (Eq t, Hashable t, Ord t) => (a -> t) -> Feature a -> V.Vector a
+    :: forall a t. (Eq t, Hashable t) => (a -> t) -> Feature a -> V.Vector a
     -> [(Split a, Double)]
 gains target (Feature _ extract strategy) datas = do
     split <- strategy column
@@ -137,9 +135,9 @@ data Tree a t
     | Branch String (Split a) (Tree a t) (Tree a t)
 
 treeToGraph
-    :: Show t => (t -> String) -> Tree a t -> [String]
-treeToGraph mkLeafLabel tree =
-    let (_, _, strs) = runRWS (toGraph tree) () 0 in strs
+    :: (t -> String) -> Tree a t -> [String]
+treeToGraph mkLeafLabel = \tree ->
+    let (_, _, strs) = runRWS (toGraph tree) () (0 :: Int) in strs
   where
     toGraph tree = do
         tell ["digraph graphname {"]
@@ -172,15 +170,14 @@ printTree (Branch attr (Split ledge redge _) ltree rtree) =
     [" " ++ redge] ++
     map ("  " ++) (printTree rtree)
 
-makeLeaf :: Ord t => (a -> t) -> V.Vector a -> Tree a t
+makeLeaf :: (Eq t, Hashable t) => (a -> t) -> V.Vector a -> Tree a t
 makeLeaf target datas =
-    let tally      = Impurity.tally (fmap target datas)
-        total      = fromIntegral $ V.length datas
-        (t, count) = maximumBy (comparing snd) (Map.toList tally) in
-    Leaf t (fromIntegral count / total)
+    let histo@(Histogram freqs _) = foldMap (singleton . target) datas
+        (t, count) = maximumBy (comparing snd) (HMS.toList freqs) in
+    Leaf t (fromIntegral count / fromIntegral (total histo))
 
 makeTree
-    :: forall a t. (Hashable t, Ord t)
+    :: forall a t. (Eq t, Hashable t)
     => Int          -- ^ Max depth
     -> (a -> t)     -- ^ Target
     -> [Feature a]  -- ^ Features
@@ -191,7 +188,7 @@ makeTree maxDepth target features = go 0
     go depth datas | depth >= maxDepth =
         makeLeaf target datas
 
-    go depth datas | [single] <- nub (map target $ V.toList datas) =
+    go _depth datas | [single] <- nub (map target $ V.toList datas) =
         Leaf single 1.0
 
     go depth datas =
