@@ -1,10 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+
+module Feature where
+
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Csv as Csv
-import qualified Data.Graph.Inductive.Graph as Graph
-import qualified Data.HashMap.Strict as HMS
+-- import qualified Data.Graph.Inductive.Graph as Graph
+-- import qualified Data.HashMap.Strict as HMS
 import           Data.List
 import Control.Monad.RWS (runRWS)
 import Control.Monad.Writer (tell)
@@ -108,7 +111,7 @@ gains
     :: forall a b t. Ord t => (a -> t) -> Feature a b -> V.Vector a
     -> [(Split b, (Double, V.Vector a, V.Vector a))]
 gains mkTarget feature datas = do
-    split@(Split _ _ f) <- splits feature (map (extract feature) $ V.toList datas)
+    split <- splits feature (map (extract feature) $ V.toList datas)
     return (split, gain split)
   where
     target   = V.map mkTarget datas
@@ -131,7 +134,7 @@ data Tree a b t
     deriving (Show)
 
 treeToGraph
-    :: Show t => (t -> String) -> Tree a b t -> [String]
+    :: (t -> String) -> Tree a b t -> [String]
 treeToGraph mkLeafLabel tree =
     let (_, _, strs) = runRWS (toGraph tree) () 0 in strs
   where
@@ -197,7 +200,7 @@ makeTree maxDepth mkTarget features = go 0
                 , gain    <- gains mkTarget feature datas
                 ]
 
-            (fname, (split@(Split _ _ f), (_, xs, ys))) =
+            (fname, (split, (_, xs, ys))) =
                 maximumBy (comparing (\(_, (_, (g, _, _))) -> g))
                 allGains in
 
