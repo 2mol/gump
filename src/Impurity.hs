@@ -29,6 +29,7 @@ proportions xs =
     where
         counts = M.elems (tally xs)
         n = fromIntegral $ length xs
+{-# INLINE proportions #-}
 
 
 -- entropy measure
@@ -36,6 +37,7 @@ proportions xs =
 entropy :: (Foldable t, Ord a) => t a -> Double
 entropy xs =
     -Prelude.sum [p * logBase 2 p | p <- proportions xs]
+{-# INLINE entropy #-}
 
 
 -- gini coefficient as an impurity measure

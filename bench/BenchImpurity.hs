@@ -37,7 +37,11 @@ mkImpurityBenchmarks k =
     [ env (return (computeAs P $ makeRandomArray k)) $ \arr ->
         bgroup
           "Massiv"
-          [bench "Tally" $ nf (computeAs U . A.tally) arr]
+          [ bench "Tally" $ nf (computeAs U . A.tally) arr
+          , bench "Entropy" $ whnf A.entropy arr
+          ]
     , env (return (A.toList $ computeAs P $ makeRandomArray k)) $ \xs ->
-        bgroup "List+Map" [bench "Tally" $ nf L.tally xs]
+        bgroup
+          "List+Map"
+          [bench "Tally" $ nf L.tally xs, bench "Entropy" $ whnf L.entropy xs]
     ]

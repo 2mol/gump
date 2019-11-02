@@ -35,6 +35,7 @@ proportions arr = A.map (\c -> fromIntegral c / n) counts
   where
     counts = computeAs P (snd <$> tally arr)
     n = fromIntegral $ unSz $ size counts
+{-# INLINE proportions #-}
 
 
 entropy ::
@@ -42,6 +43,7 @@ entropy ::
   => Array r ix a
   -> Double
 entropy = negate . A.sum . A.map (\p -> p * logBase 2 p) . proportions
+{-# INLINE entropy #-}
 
 
 
@@ -50,6 +52,7 @@ gini ::
   => Array r ix a
   -> Double
 gini = A.sum . A.map (\p -> p * (1 - p)) . proportions
+{-# INLINE gini #-}
 
 
 -- misclassification coefficient as an impurity measure
@@ -59,3 +62,4 @@ misclassification ::
   => Array r ix a
   -> Double
 misclassification xs = 1 - maximum' (proportions xs)
+{-# INLINE misclassification #-}
