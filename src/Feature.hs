@@ -23,12 +23,12 @@ import qualified Data.Vector as V
 data Feature s where
     Feature :: String -> (s -> a) -> Strategy a -> Feature s
 
-instance Show (Split a) where
-    show (Split x y _) = "Split " ++ show x ++ " " ++ show y ++ " _"
-
 type Strategy a = V.Vector a -> [Split a]
 
 data Split a = Split String String (a -> Bool)
+
+instance Show (Split a) where
+    show (Split x y _) = "Split " ++ show x ++ " " ++ show y ++ " _"
 
 bool :: Strategy Bool
 bool = const [Split "True" "False" id]
@@ -75,10 +75,10 @@ instance Csv.FromRecord Iris where
 
 irisFeatures :: [Feature Iris]
 irisFeatures =
-    [ Feature "sepal length"  sepalLength float
-    , Feature "sepal width"   sepalWidth  float
-    , Feature "petal length"  petalLength float
-    , Feature "petal width"   petalWidth  float
+    [ Feature "sepal length" sepalLength float
+    , Feature "sepal width"  sepalWidth  float
+    , Feature "petal length" petalLength float
+    , Feature "petal width"  petalWidth  float
     ]
 
 data Histogram a = Histogram !(HMS.HashMap a Int) !Int
@@ -90,13 +90,14 @@ instance (Eq a, Hashable a) => Semigroup (Histogram a) where
 instance (Eq a, Hashable a) => Monoid (Histogram a) where
     mempty = Histogram HMS.empty 0
 
-singleton :: (Eq a, Hashable a) => a -> Histogram a
+singleton :: (Hashable a) => a -> Histogram a
 singleton x = Histogram (HMS.singleton x 1) 1
 
-entropy :: (Eq a, Hashable a) => Histogram a -> Double
-entropy (Histogram histo t) = -sum
-    [ let p = (fromIntegral c / fromIntegral t) in p * logBase 2 p
-    | (_, c) <- HMS.toList histo
+entropy :: Histogram a -> Double
+entropy (Histogram histo totalCount) = -sum
+    [ p * logBase 2 p
+    | (_, elemCount) <- HMS.toList histo
+    , let p = (fromIntegral elemCount / fromIntegral totalCount)
     ]
 
 total :: Histogram a -> Int
@@ -161,14 +162,14 @@ treeToGraph mkLeafLabel = \tree ->
 
     fresh = state $ \counter -> ("node" ++ show counter, counter + 1)
 
-printTree :: Show t => Tree a t -> [String]
-printTree (Leaf x d) = [show x ++ " (" ++ show d ++ ")"]
-printTree (Branch attr (Split ledge redge _) ltree rtree) =
-    [attr] ++
-    [" " ++ ledge] ++
-    map ("  " ++) (printTree ltree) ++
-    [" " ++ redge] ++
-    map ("  " ++) (printTree rtree)
+-- printTree :: Show t => Tree a t -> [String]
+-- printTree (Leaf x d) = [show x ++ " (" ++ show d ++ ")"]
+-- printTree (Branch attr (Split ledge redge _) ltree rtree) =
+--     [attr] ++
+--     [" " ++ ledge] ++
+--     map ("  " ++) (printTree ltree) ++
+--     [" " ++ redge] ++
+--     map ("  " ++) (printTree rtree)
 
 makeLeaf :: (Eq t, Hashable t) => (a -> t) -> V.Vector a -> Tree a t
 makeLeaf target datas =

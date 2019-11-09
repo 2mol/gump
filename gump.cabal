@@ -28,18 +28,13 @@ library
     , bytestring
     , containers
     , pretty-show
-    -- , vector
+    , hashable
     , massiv
     , mtl
     , vector
     , unordered-containers
     , cassava
     , fgl
-    -- , cassava
-    -- , hmatrix
-    -- , Frames
-    -- , Chart
-    -- , sv
   hs-source-dirs: src
   ghc-options:
     -Wall -Wcompat -Wincomplete-record-updates
