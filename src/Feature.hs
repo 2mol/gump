@@ -17,6 +17,7 @@ import           Data.Ord (comparing)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
+import qualified Numeric
 
 --------------------------------------------------------------------------------
 
@@ -29,16 +30,20 @@ type Strategy a =
     V.Vector a -> [Split a]
 
 data Split a = Split
-    String      -- the label for the left branch of the split
-    String      -- the label for the right branch of the split
-    (a -> Bool) -- a function that decides which value goes into which branch
+    { leftLabel  :: String     -- the label for the left branch of the split
+    , rightLabel :: String     -- the label for the right branch of the split
+    , splitter  :: (a -> Bool) -- a function that decides which value goes into which branch
+    }
 
 instance Show (Split a) where
     show (Split x y _) = "Split " ++ show x ++ " " ++ show y ++ " _"
 
 
 --------------------------------------------------------------------------------
--- Sensible default strategies
+-- Standard strategies
+
+showFloat :: RealFloat a => a -> String
+showFloat n = Numeric.showEFloat (Just 2) n ""
 
 -- There is only one sensible way of splitting a list of booleans,
 -- so we choose to put True into the left branch and False into the right one.
@@ -63,7 +68,7 @@ int values =
 float :: Strategy Float
 float values | V.null values = []
 float values =
-    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    [ Split ("< " ++ showFloat pivot) (">= " ++ showFloat pivot) (\x -> x < pivot)
     | let uniques = V.foldl' (\set el -> Set.insert el set) Set.empty values
     , let sUniques = (Set.toAscList uniques)
     , let middles = zipWith (\n1 n2 -> (n1 + n2) / 2) sUniques (tail sUniques)
@@ -79,20 +84,20 @@ floatStep nsteps floats =
     let lo   = minimum floats
         hi   = maximum floats
         step = (hi - lo) / (fromIntegral nsteps) in
-    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    [ Split ("< " ++ showFloat pivot) (">= " ++ showFloat pivot) (\x -> x < pivot)
     | pivot <- [lo + step, lo + 2 * step .. hi]
     ]
 
 
 -- We can generalize the strategy with a given number of steps to other
 -- numerical types.
-numericalStep :: (Fractional i, Ord i, Enum i, Show i) => Int -> Strategy i
+numericalStep :: (RealFloat i, Enum i) => Int -> Strategy i
 numericalStep _ floats | V.null floats = []
 numericalStep nsteps floats =
     let lo   = minimum floats
         hi   = maximum floats
         step = (hi - lo) / (fromIntegral nsteps) in
-    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    [ Split ("< " ++ showFloat pivot) (">= " ++ showFloat pivot) (\x -> x < pivot)
     | pivot <- [lo + step, lo + 2 * step .. hi]
     ]
 
@@ -101,7 +106,7 @@ numericalStep nsteps floats =
 steps :: (Ord i, Show i) => [i] -> Strategy i
 steps pivots _ =
     [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
-    | pivot <- sort pivots
+    | pivot <- pivots
     ]
 
 
@@ -139,7 +144,10 @@ irisFeatures =
     , Feature "petal width"  petalWidth  float
     ]
 
-data Histogram a = Histogram !(HMS.HashMap a Int) !Int
+data Histogram a = Histogram
+    { tally :: !(HMS.HashMap a Int)
+    , total :: !Int
+    }
 
 instance (Eq a, Hashable a) => Semigroup (Histogram a) where
     Histogram m1 t1 <> Histogram m2 t2 =
@@ -158,8 +166,6 @@ entropy (Histogram histo totalCount) = -sum
     , let p = (fromIntegral elemCount / fromIntegral totalCount)
     ]
 
-total :: Histogram a -> Int
-total (Histogram _ t) = t
 
 gains
     :: forall a t. (Eq t, Hashable t) => (a -> t) -> Feature a -> V.Vector a
