@@ -23,34 +23,92 @@ import qualified Data.Vector as V
 data Feature s where
     Feature :: String -> (s -> a) -> Strategy a -> Feature s
 
-type Strategy a = V.Vector a -> [Split a]
+type Strategy a =
+    -- a strategy should give a list of split candidates based on the vector
+    -- of values that we observe. Afterwards we'll try to find the "best" split.
+    V.Vector a -> [Split a]
 
-data Split a = Split String String (a -> Bool)
+data Split a = Split
+    String      -- the label for the left branch of the split
+    String      -- the label for the right branch of the split
+    (a -> Bool) -- a function that decides which value goes into which branch
 
 instance Show (Split a) where
     show (Split x y _) = "Split " ++ show x ++ " " ++ show y ++ " _"
 
-bool :: Strategy Bool
-bool = const [Split "True" "False" id]
 
+--------------------------------------------------------------------------------
+-- Sensible default strategies
+
+-- There is only one sensible way of splitting a list of booleans,
+-- so we choose to put True into the left branch and False into the right one.
+bool :: Strategy Bool
+bool _ = [Split "True" "False" id]
+
+
+-- One integer strategy is to just split on each one of the possible values.
+-- This will be inefficient if the number of possible values is very large.
 int :: Strategy Int
-int ints =
+int values | V.null values = []
+int values =
     [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
-    | pivot <- Set.toAscList $ V.foldl' (flip Set.insert) Set.empty ints
+    | let uniques = V.foldl' (\set el -> Set.insert el set) Set.empty values
+    , pivot <- Set.toAscList uniques
     ]
 
+
+-- One naïve float strategy is to split in the middle between each of the possible values.
+-- Like the similar int strategy, this is not suited for a very large number
+-- of distinct values.
 float :: Strategy Float
-float floats | V.null floats = []
-float floats =
+float values | V.null values = []
+float values =
+    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    | let uniques = V.foldl' (\set el -> Set.insert el set) Set.empty values
+    , let sUniques = (Set.toAscList uniques)
+    , let middles = zipWith (\n1 n2 -> (n1 + n2) / 2) sUniques (tail sUniques)
+    , pivot <- middles
+    ]
+
+
+-- another strategy for floats is to try a given number of splits between the
+-- min and max of all possible values.
+floatStep :: Int -> Strategy Float
+floatStep _ floats | V.null floats = []
+floatStep nsteps floats =
     let lo   = minimum floats
         hi   = maximum floats
-        step = (hi - lo) / 100.0 in
+        step = (hi - lo) / (fromIntegral nsteps) in
     [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
     | pivot <- [lo + step, lo + 2 * step .. hi]
     ]
 
-distinct :: (Eq a, Show a) => Strategy a
-distinct values =
+
+-- We can generalize the strategy with a given number of steps to other
+-- numerical types.
+numericalStep :: (Fractional i, Ord i, Enum i, Show i) => Int -> Strategy i
+numericalStep _ floats | V.null floats = []
+numericalStep nsteps floats =
+    let lo   = minimum floats
+        hi   = maximum floats
+        step = (hi - lo) / (fromIntegral nsteps) in
+    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    | pivot <- [lo + step, lo + 2 * step .. hi]
+    ]
+
+
+-- We can generate a strategy simply on the basis of provided splitting points.
+steps :: (Ord i, Show i) => [i] -> Strategy i
+steps pivots _ =
+    [ Split ("< " ++ show pivot) (">= " ++ show pivot) (\x -> x < pivot)
+    | pivot <- sort pivots
+    ]
+
+
+-- A strategy for categorical values is to split between one particular
+-- value and everything else.
+categorical :: (Eq a, Show a) => Strategy a
+categorical values =
     [ Split ("== " ++ show val) ("!= " ++ show val) (\x -> x == val)
     | val <- nub $ V.toList values
     ]
